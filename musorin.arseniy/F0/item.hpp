@@ -35,4 +35,11 @@ struct Item
   double power;
 };
 
+struct Recipe
+{
+  std::string result_id;
+  std::vector<Ingredient> ingredients;
+};
+
+
 #endif
