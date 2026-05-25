@@ -96,4 +96,39 @@ inline void loadData(HashMap<std::string, Item>& items,
   recipes.insert("flint_and_steel", {"flint_and_steel", {{"iron_ingot", 1}, {"flint", 1}}});
   recipes.insert("fishing_rod", {"fishing_rod", {{"stick", 3}, {"string", 2}}});
   recipes.insert("shield", {"shield", {{"iron_ingot", 1}, {"planks", 5}}});
+
+  auto addUse = [&](const std::string& ingredient, const std::string& result)
+  {
+    List<std::string>* lst = useMap.find(ingredient);
+    if (!lst)
+    {
+      List<std::string> emptyList;
+      useMap.insert(ingredient, emptyList);
+      lst = useMap.find(ingredient);
+    }
+    lst->pushFront(result);
+  };
+
+  std::string recipeIds[] = {
+    "wooden_sword", "golden_sword", "iron_sword", "diamond_sword", "netherite_sword",
+    "golden_helmet", "iron_helmet", "diamond_helmet", "netherite_helmet",
+    "golden_chestplate", "iron_chestplate", "diamond_chestplate", "netherite_chestplate",
+    "golden_leggings", "iron_leggings", "diamond_leggings", "netherite_leggings",
+    "golden_boots", "iron_boots", "diamond_boots", "netherite_boots",
+    "golden_apple", "bow", "arrow", "flint_and_steel", "fishing_rod", "shield"
+  };
+
+  for (const std::string& rid : recipeIds)
+  {
+    Recipe* rec = recipes.find(rid);
+    if (rec)
+    {
+      for (const Ingredient& ing : rec->ingredients)
+      {
+        addUse(ing.item_id, rec->result_id);
+      }
+    }
+  }
+}
+
 #endif
