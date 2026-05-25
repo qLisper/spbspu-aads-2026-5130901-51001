@@ -7,6 +7,8 @@
 template< class T >
 class List
 {
+  template < class K, class V >
+  friend class HashMap;
 public:
   List():
     head_(nullptr),
@@ -77,6 +79,16 @@ private:
     T data;
     Node* next_;
   };
+
+  Node* head()
+  {
+    return head_;
+  }
+
+  void setHead(Node* node)
+  {
+    head_ = node;
+  }
 
   Node* head_;
   size_t size_;
