@@ -63,6 +63,20 @@ int main()
       }
       itemInfo(std::cout, id, items);
     }
+    else if (cmd == "best-pvp-pack")
+    {
+      std::string rest;
+      std::getline(iss, rest);
+      if (rest.empty() || rest[0] == ' ') rest.erase(0,1);
+      bestPvpPack(std::cout, rest, items, recipes);
+    }
+     else if (cmd == "what-to-add")
+    {
+      std::string rest;
+      std::getline(iss, rest);
+      if (rest.empty() || rest[0] == ' ') rest.erase(0,1);
+      whatToAdd(std::cout, rest, items, recipes);
+    }
     else
     {
       std::cerr << "Unknown command: " << cmd << '\n';
