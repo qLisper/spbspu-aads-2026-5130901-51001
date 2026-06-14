@@ -6,10 +6,12 @@
 #include <functional>
 #include <utility>
 
-namespace musorin {
+namespace musorin
+{
 
 template< class Key, class Value, class Hash = std::hash<Key>, class Equal = std::equal_to<Key> >
-class HashTable {
+class HashTable
+{
 public:
   enum State { EMPTY, OCCUPIED, TOMBSTONE };
 
@@ -22,13 +24,14 @@ public:
   friend class HTIter;
   friend class HTCIter;
 
-  explicit HashTable(std::size_t capacity = 10):
+  explicit HashTable(size_t capacity = 10):
     entries_(new Entry[capacity]),
     capacity_(capacity),
     size_(0),
     tombstone_count_(0)
   {
-    for (std::size_t i = 0; i < capacity_; ++i) {
+    for (size_t i = 0; i < capacity_; ++i)
+    {
       entries_[i].state = EMPTY;
     }
   }
@@ -41,14 +44,19 @@ public:
   void add(const Key& k, const Value& v)
   {
     size_t idx = findInsertIndex(k);
-    if (idx == capacity_) {
+    if (idx == capacity_)
+    {
       throw std::runtime_error("Hash table is full");
     }
     Entry& entry = entries_[idx];
-    if (entry.state == OCCUPIED && Equal()(entry.key, k)) {
+    if (entry.state == OCCUPIED && Equal()(entry.key, k))
+    {
       entry.value = v;
-    } else {
-      if (entry.state == TOMBSTONE) {
+    }
+    else
+    {
+      if (entry.state == TOMBSTONE)
+      {
         --tombstone_count_;
       }
       entry.key = k;
@@ -61,7 +69,8 @@ public:
   Value drop(const Key& k)
   {
     size_t idx = findIndex(k);
-    if (idx == capacity_) {
+    if (idx == capacity_)
+    {
       throw std::runtime_error("Key not found");
     }
     Entry& entry = entries_[idx];
@@ -79,7 +88,8 @@ public:
   Value& at(const Key& k)
   {
     size_t idx = findIndex(k);
-    if (idx == capacity_) {
+    if (idx == capacity_)
+    {
       throw std::runtime_error("Key not found");
     }
     return entries_[idx].value;
@@ -87,8 +97,9 @@ public:
 
   const Value& at(const Key& k) const
   {
-    std::size_t idx = findIndex(k);
-    if (idx == capacity_) {
+    size_t idx = findIndex(k);
+    if (idx == capacity_)
+    {
       throw std::runtime_error("Key not found");
     }
     return entries_[idx].value;
@@ -97,7 +108,8 @@ public:
   iterator find(const Key& k)
   {
     size_t idx = findIndex(k);
-    if (idx != capacity_) {
+    if (idx != capacity_)
+    {
       return iterator(this, idx);
     }
     return end();
@@ -106,15 +118,17 @@ public:
   const_iterator find(const Key& k) const
   {
     size_t idx = findIndex(k);
-    if (idx != capacity_) {
+    if (idx != capacity_)
+    {
       return const_iterator(this, idx);
     }
     return end();
   }
 
-  void rehash(std::size_t slots)
+  void rehash(size_t slots)
   {
-    if (slots == 0) {
+    if (slots == 0)
+    {
       throw std::invalid_argument("Slots must be > 0");
     }
     Entry* old_entries = entries_;
@@ -123,13 +137,17 @@ public:
     capacity_ = slots;
     size_ = 0;
     tombstone_count_ = 0;
-    for (std::size_t i = 0; i < capacity_; ++i) {
+    for (size_t i = 0; i < capacity_; ++i)
+    {
       entries_[i].state = EMPTY;
     }
-    for (std::size_t i = 0; i < old_capacity; ++i) {
-      if (old_entries[i].state == OCCUPIED) {
+    for (size_t i = 0; i < old_capacity; ++i)
+    {
+      if (old_entries[i].state == OCCUPIED)
+      {
         size_t idx = findInsertIndex(old_entries[i].key);
-        if (idx == capacity_) {
+        if (idx == capacity_)
+        {
           delete[] entries_;
           entries_ = old_entries;
           capacity_ = old_capacity;
@@ -147,7 +165,8 @@ public:
   iterator begin()
   {
     size_t idx = 0;
-    while (idx < capacity_ && entries_[idx].state != OCCUPIED) {
+    while (idx < capacity_ && entries_[idx].state != OCCUPIED)
+    {
       ++idx;
     }
     return iterator(this, idx);
@@ -161,7 +180,8 @@ public:
   const_iterator begin() const
   {
     size_t idx = 0;
-    while (idx < capacity_ && entries_[idx].state != OCCUPIED) {
+    while (idx < capacity_ && entries_[idx].state != OCCUPIED)
+    {
       ++idx;
     }
     return const_iterator(this, idx);
@@ -193,7 +213,8 @@ public:
   }
 
 private:
-  struct Entry {
+  struct Entry
+  {
     Key key;
     Value value;
     State state;
@@ -213,11 +234,15 @@ private:
   size_t findIndex(const Key& k) const
   {
     size_t h = hash(k);
-    for (size_t i = 0; i < capacity_; ++i) {
+    for (size_t i = 0; i < capacity_; ++i)
+    {
       size_t idx = (h + i) % capacity_;
-      if (entries_[idx].state == EMPTY) {
+      if (entries_[idx].state == EMPTY)
+      {
         return capacity_;
-      } else if (entries_[idx].state == OCCUPIED && Equal()(entries_[idx].key, k)) {
+      }
+      else if (entries_[idx].state == OCCUPIED && Equal()(entries_[idx].key, k))
+      {
         return idx;
       }
     }
@@ -228,15 +253,22 @@ private:
   {
     size_t h = hash(k);
     size_t first_tombstone = capacity_;
-    for (size_t i = 0; i < capacity_; ++i) {
+    for (size_t i = 0; i < capacity_; ++i)
+    {
       size_t idx = (h + i) % capacity_;
-      if (entries_[idx].state == EMPTY) {
+      if (entries_[idx].state == EMPTY)
+      {
         return (first_tombstone != capacity_) ? first_tombstone : idx;
-      } else if (entries_[idx].state == TOMBSTONE) {
-        if (first_tombstone == capacity_) {
+      }
+      else if (entries_[idx].state == TOMBSTONE)
+      {
+        if (first_tombstone == capacity_)
+        {
           first_tombstone = idx;
         }
-      } else if (entries_[idx].state == OCCUPIED && Equal()(entries_[idx].key, k)) {
+      }
+      else if (entries_[idx].state == OCCUPIED && Equal()(entries_[idx].key, k))
+      {
         return idx;
       }
     }
@@ -246,7 +278,8 @@ private:
 
 
 template< class Key, class Value, class Hash, class Equal >
-class HashTable<Key, Value, Hash, Equal>::HTIter {
+class HashTable<Key, Value, Hash, Equal>::HTIter
+{
   friend class HashTable<Key, Value, Hash, Equal>;
 public:
   HTIter():
@@ -266,10 +299,12 @@ public:
 
   HTIter& operator++()
   {
-    do {
+    do
+    {
       ++index_;
-    } while (index_ < table_->capacity_ &&
-             table_->entries_[index_].state != HashTable<Key, Value, Hash, Equal>::OCCUPIED);
+    }
+    while (index_ < table_->capacity_ &&
+           table_->entries_[index_].state != HashTable<Key, Value, Hash, Equal>::OCCUPIED);
     return *this;
   }
 
@@ -291,7 +326,7 @@ public:
   }
 
 private:
-  explicit HTIter(HashTable* table, std::size_t idx):
+  explicit HTIter(HashTable* table, size_t idx):
     table_(table),
     index_(idx)
   {}
@@ -301,7 +336,8 @@ private:
 };
 
 template< class Key, class Value, class Hash, class Equal >
-class HashTable<Key, Value, Hash, Equal>::HTCIter {
+class HashTable<Key, Value, Hash, Equal>::HTCIter
+{
   friend class HashTable<Key, Value, Hash, Equal>;
 public:
   HTCIter():
@@ -321,10 +357,12 @@ public:
 
   HTCIter& operator++()
   {
-    do {
+    do
+    {
       ++index_;
-    } while (index_ < table_->capacity_ &&
-             table_->entries_[index_].state != HashTable<Key, Value, Hash, Equal>::OCCUPIED);
+    }
+    while (index_ < table_->capacity_ &&
+           table_->entries_[index_].state != HashTable<Key, Value, Hash, Equal>::OCCUPIED);
     return *this;
   }
 
@@ -346,7 +384,7 @@ public:
   }
 
 private:
-  explicit HTCIter(const HashTable* table, std::size_t idx):
+  explicit HTCIter(const HashTable* table, size_t idx):
     table_(table),
     index_(idx)
   {}
@@ -355,6 +393,6 @@ private:
   size_t index_;
 };
 
-}
+} 
 
 #endif
