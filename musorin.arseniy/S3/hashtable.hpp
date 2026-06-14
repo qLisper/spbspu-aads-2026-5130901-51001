@@ -40,7 +40,7 @@ public:
 
   void add(const Key& k, const Value& v)
   {
-    std::size_t idx = findInsertIndex(k);
+    size_t idx = findInsertIndex(k);
     if (idx == capacity_) {
       throw std::runtime_error("Hash table is full");
     }
@@ -60,7 +60,7 @@ public:
 
   Value drop(const Key& k)
   {
-    std::size_t idx = findIndex(k);
+    size_t idx = findIndex(k);
     if (idx == capacity_) {
       throw std::runtime_error("Key not found");
     }
@@ -78,7 +78,7 @@ public:
 
   Value& at(const Key& k)
   {
-    std::size_t idx = findIndex(k);
+    size_t idx = findIndex(k);
     if (idx == capacity_) {
       throw std::runtime_error("Key not found");
     }
@@ -96,7 +96,7 @@ public:
 
   iterator find(const Key& k)
   {
-    std::size_t idx = findIndex(k);
+    size_t idx = findIndex(k);
     if (idx != capacity_) {
       return iterator(this, idx);
     }
@@ -105,7 +105,7 @@ public:
 
   const_iterator find(const Key& k) const
   {
-    std::size_t idx = findIndex(k);
+    size_t idx = findIndex(k);
     if (idx != capacity_) {
       return const_iterator(this, idx);
     }
@@ -118,7 +118,7 @@ public:
       throw std::invalid_argument("Slots must be > 0");
     }
     Entry* old_entries = entries_;
-    std::size_t old_capacity = capacity_;
+    size_t old_capacity = capacity_;
     entries_ = new Entry[slots];
     capacity_ = slots;
     size_ = 0;
@@ -128,9 +128,8 @@ public:
     }
     for (std::size_t i = 0; i < old_capacity; ++i) {
       if (old_entries[i].state == OCCUPIED) {
-        std::size_t idx = findInsertIndex(old_entries[i].key);
+        size_t idx = findInsertIndex(old_entries[i].key);
         if (idx == capacity_) {
-          // откат изменений
           delete[] entries_;
           entries_ = old_entries;
           capacity_ = old_capacity;
@@ -147,7 +146,7 @@ public:
 
   iterator begin()
   {
-    std::size_t idx = 0;
+    size_t idx = 0;
     while (idx < capacity_ && entries_[idx].state != OCCUPIED) {
       ++idx;
     }
@@ -161,7 +160,7 @@ public:
 
   const_iterator begin() const
   {
-    std::size_t idx = 0;
+    size_t idx = 0;
     while (idx < capacity_ && entries_[idx].state != OCCUPIED) {
       ++idx;
     }
@@ -183,7 +182,7 @@ public:
     return end();
   }
 
-  std::size_t size() const
+  size_t size() const
   {
     return size_;
   }
@@ -202,20 +201,20 @@ private:
   };
 
   Entry* entries_;
-  std::size_t capacity_;
-  std::size_t size_;
-  std::size_t tombstone_count_;
+  size_t capacity_;
+  size_t size_;
+  size_t tombstone_count_;
 
-  std::size_t hash(const Key& k) const
+  size_t hash(const Key& k) const
   {
     return Hash()(k) % capacity_;
   }
 
-  std::size_t findIndex(const Key& k) const
+  size_t findIndex(const Key& k) const
   {
-    std::size_t h = hash(k);
-    for (std::size_t i = 0; i < capacity_; ++i) {
-      std::size_t idx = (h + i) % capacity_;
+    size_t h = hash(k);
+    for (size_t i = 0; i < capacity_; ++i) {
+      size_t idx = (h + i) % capacity_;
       if (entries_[idx].state == EMPTY) {
         return capacity_;
       } else if (entries_[idx].state == OCCUPIED && Equal()(entries_[idx].key, k)) {
@@ -225,12 +224,12 @@ private:
     return capacity_;
   }
 
-  std::size_t findInsertIndex(const Key& k) const
+  size_t findInsertIndex(const Key& k) const
   {
-    std::size_t h = hash(k);
-    std::size_t first_tombstone = capacity_;
-    for (std::size_t i = 0; i < capacity_; ++i) {
-      std::size_t idx = (h + i) % capacity_;
+    size_t h = hash(k);
+    size_t first_tombstone = capacity_;
+    for (size_t i = 0; i < capacity_; ++i) {
+      size_t idx = (h + i) % capacity_;
       if (entries_[idx].state == EMPTY) {
         return (first_tombstone != capacity_) ? first_tombstone : idx;
       } else if (entries_[idx].state == TOMBSTONE) {
@@ -298,7 +297,7 @@ private:
   {}
 
   HashTable* table_;
-  std::size_t index_;
+  size_t index_;
 };
 
 template< class Key, class Value, class Hash, class Equal >
@@ -353,7 +352,7 @@ private:
   {}
 
   const HashTable* table_;
-  std::size_t index_;
+  size_t index_;
 };
 
 }
