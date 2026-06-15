@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
+#include <functional>
+#include <algorithm>
 #include "hashtable.hpp"
 #include "graph.hpp"
 
@@ -17,10 +19,10 @@ void parseLine(const std::string& line, List<std::string>& args)
   size_t start = 0;
   while (start < line.size())
   {
-    while (start < line.size() && line[start] == ') ++start;
+    while (start < line.size() && line[start] == ' ') ++start;
     if (start == line.size()) break;
     size_t end = start;
-    while (end < line.size() && line[end] != ') ++end;
+    while (end < line.size() && line[end] != ' ') ++end;
     args.pushBack(line.substr(start, end - start));
     start = end;
   }
@@ -87,7 +89,31 @@ bool loadGraphs(std::istream& in, HashTable<std::string, Graph>& graphs)
   return true;
 }
 
+template< class T >
+void sortList(List<T>& list)
+{
+  size_t n = list.size();
+  T* arr = new T[n];
+  size_t i = 0;
+  for (auto it = list.cbegin(); it != list.cend(); ++it)
+  {
+    arr[i++] = *it;
+  }
+  std::sort(arr, arr + n);
+  list.clear();
+  for (size_t j = 0; j < n; ++j)
+  {
+    list.pushBack(arr[j]);
+  }
+  delete[] arr;
 }
+
+void printInvalidCommand()
+{
+  std::cout << "<INVALID COMMAND>\n";
+}
+
+} // anonymous namespace
 
 int main(int argc, char* argv[])
 {
@@ -110,6 +136,68 @@ int main(int argc, char* argv[])
     return 1;
   }
 
- 
+  using CommandHandler = std::function<void(List<std::string>&)>;
+  musorin::HashTable<std::string, CommandHandler> commands;
+
+  // graphs
+  commands.add("graphs", [&graphs](List<std::string>&) {
+    List<std::string> names;
+    for (auto it = graphs.begin(); it != graphs.end(); ++it)
+    {
+      names.pushBack(it->first);
+    }
+    sortList(names);
+    for (auto nit = names.cbegin(); nit != names.cend(); ++nit)
+    {
+      std::cout << *nit << '\n';
+    }
+  });
+
+  // vertexes
+  commands.add("vertexes", [&graphs](List<std::string>& args) {
+    if (args.size() != 1)
+    {
+      printInvalidCommand();
+      return;
+    }
+    std::string graphName = args.front();
+    if (!graphs.has(graphName))
+    {
+      printInvalidCommand();
+      return;
+    }
+    musorin::Graph& g = graphs.at(graphName);
+    List<std::string> verts = g.getVertexList();
+    sortList(verts);
+    for (auto it = verts.cbegin(); it != verts.cend(); ++it)
+    {
+      std::cout << *it << '\n';
+    }
+  });
+
+  std::string line;
+  while (std::getline(std::cin, line))
+  {
+    if (line.empty()) continue;
+    List<std::string> args;
+    parseLine(line, args);
+    if (args.empty()) continue;
+    std::string cmd = args.front();
+    args.popFront();
+    if (!commands.has(cmd))
+    {
+      printInvalidCommand();
+      continue;
+    }
+    try
+    {
+      commands.at(cmd)(args);
+    }
+    catch (const std::exception&)
+    {
+      printInvalidCommand();
+    }
+  }
+
   return 0;
 }
