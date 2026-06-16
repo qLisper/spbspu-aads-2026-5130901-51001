@@ -14,6 +14,12 @@ using musorin::HashTable;
 using musorin::Graph;
 using musorin::List;
 
+struct Neighbor
+{
+  std::string vertex;
+  List<size_t> weights;
+};
+
 void parseLine(const std::string& line, List<std::string>& args)
 {
   size_t start = 0;
@@ -113,7 +119,19 @@ void printInvalidCommand()
   std::cout << "<INVALID COMMAND>\n";
 }
 
+void printNeighbor(const Neighbor& nb)
+{
+  std::cout << nb.vertex;
+  List<size_t> sortedWeights = nb.weights;
+  sortList(sortedWeights);
+  for (auto it = sortedWeights.cbegin(); it != sortedWeights.cend(); ++it)
+  {
+    std::cout << ' ' << *it;
+  }
+  std::cout << '\n';
 }
+
+} 
 
 int main(int argc, char* argv[])
 {
@@ -138,7 +156,6 @@ int main(int argc, char* argv[])
 
   using CommandHandler = std::function<void(List<std::string>&)>;
   musorin::HashTable<std::string, CommandHandler> commands;
-
 
   commands.add("graphs", [&graphs](List<std::string>&) {
     List<std::string> names;
@@ -238,7 +255,7 @@ int main(int argc, char* argv[])
     }
     graphs.at(gname).addEdge(from, to, weight);
   });
-
+ 
   commands.add("cut", [&graphs](List<std::string>& args) {
     if (args.size() != 4)
     {
@@ -274,6 +291,96 @@ int main(int argc, char* argv[])
     {
       printInvalidCommand();
       return;
+    }
+  });
+
+  commands.add("outbound", [&graphs](List<std::string>& args) {
+    if (args.size() != 2)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto ait = args.cbegin();
+    std::string graphName = *ait; ++ait;
+    std::string vertex = *ait;
+    if (!graphs.has(graphName) || !graphs.at(graphName).hasVertex(vertex))
+    {
+      printInvalidCommand();
+      return;
+    }
+    const Graph& g = graphs.at(graphName);
+    List<Neighbor> result;
+    for (auto eit = g.getEdges().cbegin(); eit != g.getEdges().cend(); ++eit)
+    {
+      const auto& p = *eit;
+      const musorin::EdgeKey& ek = p.first;
+      if (ek.from == vertex)
+      {
+        Neighbor nb;
+        nb.vertex = ek.to;
+        nb.weights = p.second;
+        result.pushBack(nb);
+      }
+    }
+    size_t n = result.size();
+    Neighbor* arr = new Neighbor[n];
+    size_t i = 0;
+    for (auto rit = result.begin(); rit != result.end(); ++rit) { arr[i++] = *rit; }
+    std::sort(arr, arr + n, [](const Neighbor& a, const Neighbor& b) {
+      return a.vertex < b.vertex;
+    });
+    result.clear();
+    for (size_t j = 0; j < n; ++j) { result.pushBack(arr[j]); }
+    delete[] arr;
+
+    for (auto rit = result.cbegin(); rit != result.cend(); ++rit)
+    {
+      printNeighbor(*rit);
+    }
+  });
+
+  commands.add("inbound", [&graphs](List<std::string>& args) {
+    if (args.size() != 2)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto ait = args.cbegin();
+    std::string graphName = *ait; ++ait;
+    std::string vertex = *ait;
+    if (!graphs.has(graphName) || !graphs.at(graphName).hasVertex(vertex))
+    {
+      printInvalidCommand();
+      return;
+    }
+    const Graph& g = graphs.at(graphName);
+    List<Neighbor> result;
+    for (auto eit = g.getEdges().cbegin(); eit != g.getEdges().cend(); ++eit)
+    {
+      const auto& p = *eit;
+      const musorin::EdgeKey& ek = p.first;
+      if (ek.to == vertex)
+      {
+        Neighbor nb;
+        nb.vertex = ek.from;
+        nb.weights = p.second;
+        result.pushBack(nb);
+      }
+    }
+    size_t n = result.size();
+    Neighbor* arr = new Neighbor[n];
+    size_t i = 0;
+    for (auto rit = result.begin(); rit != result.end(); ++rit) { arr[i++] = *rit; }
+    std::sort(arr, arr + n, [](const Neighbor& a, const Neighbor& b) {
+      return a.vertex < b.vertex;
+    });
+    result.clear();
+    for (size_t j = 0; j < n; ++j) { result.pushBack(arr[j]); }
+    delete[] arr;
+
+    for (auto rit = result.cbegin(); rit != result.cend(); ++rit)
+    {
+      printNeighbor(*rit);
     }
   });
 
