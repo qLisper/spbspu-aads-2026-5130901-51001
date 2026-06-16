@@ -113,7 +113,7 @@ void printInvalidCommand()
   std::cout << "<INVALID COMMAND>\n";
 }
 
-} // anonymous namespace
+}
 
 int main(int argc, char* argv[])
 {
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
   using CommandHandler = std::function<void(List<std::string>&)>;
   musorin::HashTable<std::string, CommandHandler> commands;
 
-  // graphs
+
   commands.add("graphs", [&graphs](List<std::string>&) {
     List<std::string> names;
     for (auto it = graphs.begin(); it != graphs.end(); ++it)
@@ -153,7 +153,6 @@ int main(int argc, char* argv[])
     }
   });
 
-  // vertexes
   commands.add("vertexes", [&graphs](List<std::string>& args) {
     if (args.size() != 1)
     {
@@ -172,6 +171,109 @@ int main(int argc, char* argv[])
     for (auto it = verts.cbegin(); it != verts.cend(); ++it)
     {
       std::cout << *it << '\n';
+    }
+  });
+
+  commands.add("create", [&graphs](List<std::string>& args) {
+    if (args.size() < 2)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string gname = *it; ++it;
+    size_t k = 0;
+    try
+    {
+      k = static_cast<size_t>(std::stoull(*it));
+    }
+    catch (...)
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (args.size() != 2 + k)
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (graphs.has(gname))
+    {
+      printInvalidCommand();
+      return;
+    }
+    musorin::Graph g;
+    for (size_t i = 0; i < k; ++i)
+    {
+      ++it;
+      g.addVertex(*it);
+    }
+    graphs.add(gname, g);
+  });
+
+  commands.add("bind", [&graphs](List<std::string>& args) {
+    if (args.size() != 4)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string gname = *it; ++it;
+    std::string from = *it; ++it;
+    std::string to = *it; ++it;
+    size_t weight = 0;
+    try
+    {
+      weight = static_cast<size_t>(std::stoull(*it));
+    }
+    catch (...)
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (!graphs.has(gname))
+    {
+      printInvalidCommand();
+      return;
+    }
+    graphs.at(gname).addEdge(from, to, weight);
+  });
+
+  commands.add("cut", [&graphs](List<std::string>& args) {
+    if (args.size() != 4)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string gname = *it; ++it;
+    std::string from = *it; ++it;
+    std::string to = *it; ++it;
+    size_t weight = 0;
+    try
+    {
+      weight = static_cast<size_t>(std::stoull(*it));
+    }
+    catch (...)
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (!graphs.has(gname))
+    {
+      printInvalidCommand();
+      return;
+    }
+    musorin::Graph& g = graphs.at(gname);
+    if (!g.hasVertex(from) || !g.hasVertex(to))
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (!g.removeEdge(from, to, weight))
+    {
+      printInvalidCommand();
+      return;
     }
   });
 
