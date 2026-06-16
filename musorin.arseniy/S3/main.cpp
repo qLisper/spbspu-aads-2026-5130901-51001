@@ -255,7 +255,7 @@ int main(int argc, char* argv[])
     }
     graphs.at(gname).addEdge(from, to, weight);
   });
- 
+
   commands.add("cut", [&graphs](List<std::string>& args) {
     if (args.size() != 4)
     {
@@ -381,6 +381,77 @@ int main(int argc, char* argv[])
     for (auto rit = result.cbegin(); rit != result.cend(); ++rit)
     {
       printNeighbor(*rit);
+    }
+  });
+
+  commands.add("merge", [&graphs](List<std::string>& args) {
+    if (args.size() != 3)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string newName = *it; ++it;
+    std::string g1 = *it; ++it;
+    std::string g2 = *it;
+    if (!graphs.has(g1) || !graphs.has(g2) || graphs.has(newName))
+    {
+      printInvalidCommand();
+      return;
+    }
+    Graph merged = Graph::merge(graphs.at(g1), graphs.at(g2));
+    graphs.add(newName, merged);
+  });
+
+  commands.add("extract", [&graphs](List<std::string>& args) {
+    if (args.size() < 3)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string newName = *it; ++it;
+    std::string oldName = *it; ++it;
+    size_t k = 0;
+    try
+    {
+      k = static_cast<size_t>(std::stoull(*it));
+    }
+    catch (...)
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (args.size() != 3 + k)
+    {
+      printInvalidCommand();
+      return;
+    }
+    if (!graphs.has(oldName) || graphs.has(newName))
+    {
+      printInvalidCommand();
+      return;
+    }
+    List<std::string> verts;
+    for (size_t i = 0; i < k; ++i)
+    {
+      ++it;
+      std::string v = *it;
+      if (!graphs.at(oldName).hasVertex(v))
+      {
+        printInvalidCommand();
+        return;
+      }
+      verts.pushBack(v);
+    }
+    try
+    {
+      Graph extracted = Graph::extract(graphs.at(oldName), verts);
+      graphs.add(newName, extracted);
+    }
+    catch (const std::exception&)
+    {
+      printInvalidCommand();
     }
   });
 
