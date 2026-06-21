@@ -114,6 +114,20 @@ void sortList(List<T>& list)
   delete[] arr;
 }
 
+void sortNeighbors(List<Neighbor>& neighbors)
+{
+  size_t n = neighbors.size();
+  Neighbor* arr = new Neighbor[n];
+  size_t i = 0;
+  for (auto it = neighbors.begin(); it != neighbors.end(); ++it) { arr[i++] = *it; }
+  std::sort(arr, arr + n, [](const Neighbor& a, const Neighbor& b) {
+    return a.vertex < b.vertex;
+  });
+  neighbors.clear();
+  for (size_t j = 0; j < n; ++j) { neighbors.pushBack(arr[j]); }
+  delete[] arr;
+}
+
 void printInvalidCommand()
 {
   std::cout << "<INVALID COMMAND>\n";
@@ -131,7 +145,7 @@ void printNeighbor(const Neighbor& nb)
   std::cout << '\n';
 }
 
-} 
+}
 
 int main(int argc, char* argv[])
 {
@@ -192,24 +206,29 @@ int main(int argc, char* argv[])
   });
 
   commands.add("create", [&graphs](List<std::string>& args) {
-    if (args.size() < 2)
+    if (args.empty())
     {
       printInvalidCommand();
       return;
     }
     auto it = args.cbegin();
-    std::string gname = *it; ++it;
+    std::string gname = *it;
     size_t k = 0;
-    try
+    if (args.size() >= 2)
     {
-      k = static_cast<size_t>(std::stoull(*it));
+      ++it;
+      try
+      {
+        k = static_cast<size_t>(std::stoull(*it));
+      }
+      catch (...)
+      {
+        printInvalidCommand();
+        return;
+      }
     }
-    catch (...)
-    {
-      printInvalidCommand();
-      return;
-    }
-    if (args.size() != 2 + k)
+    size_t expected = (k > 0 || args.size() >= 2) ? 2 + k : 1;
+    if (args.size() != expected)
     {
       printInvalidCommand();
       return;
@@ -322,17 +341,7 @@ int main(int argc, char* argv[])
         result.pushBack(nb);
       }
     }
-    size_t n = result.size();
-    Neighbor* arr = new Neighbor[n];
-    size_t i = 0;
-    for (auto rit = result.begin(); rit != result.end(); ++rit) { arr[i++] = *rit; }
-    std::sort(arr, arr + n, [](const Neighbor& a, const Neighbor& b) {
-      return a.vertex < b.vertex;
-    });
-    result.clear();
-    for (size_t j = 0; j < n; ++j) { result.pushBack(arr[j]); }
-    delete[] arr;
-
+    sortNeighbors(result);
     for (auto rit = result.cbegin(); rit != result.cend(); ++rit)
     {
       printNeighbor(*rit);
@@ -367,17 +376,7 @@ int main(int argc, char* argv[])
         result.pushBack(nb);
       }
     }
-    size_t n = result.size();
-    Neighbor* arr = new Neighbor[n];
-    size_t i = 0;
-    for (auto rit = result.begin(); rit != result.end(); ++rit) { arr[i++] = *rit; }
-    std::sort(arr, arr + n, [](const Neighbor& a, const Neighbor& b) {
-      return a.vertex < b.vertex;
-    });
-    result.clear();
-    for (size_t j = 0; j < n; ++j) { result.pushBack(arr[j]); }
-    delete[] arr;
-
+    sortNeighbors(result);
     for (auto rit = result.cbegin(); rit != result.cend(); ++rit)
     {
       printNeighbor(*rit);
