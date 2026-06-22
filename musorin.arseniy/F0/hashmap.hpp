@@ -25,7 +25,7 @@ public:
     {
       return !(*this == other);
     }
-
+    
     Iterator& operator++()
     {
       if (node_)
@@ -116,6 +116,38 @@ public:
     delete[] buckets_;
   }
 
+  bool remove(const Key& key)
+  {
+    std::size_t idx = hash(key) % bucketCount_;
+    if (!buckets_[idx])
+    {
+      return false;
+    }
+    List<Pair>* chain = buckets_[idx];
+	Node* curr = chain->head();
+	Node* prev = nullptr;
+	while (curr)
+	{
+	  if (curr->data.key == key)
+	  {
+	    if (prev)
+	    {
+          prev->next_ = curr->next_;
+        }
+	      else
+	    {
+	      chain->setHead(curr->next_);
+	    }
+	    delete curr;
+	    --chain->size_;
+	    --itemCount_;
+	    return true;
+	  }
+	  prev = curr;
+      curr = curr->next_;
+	}
+	  return false;
+  }
   void insert(const Key& key, const Value& value)
   {
     std::size_t idx = hash(key) % bucketCount_;

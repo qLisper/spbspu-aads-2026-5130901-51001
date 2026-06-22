@@ -42,7 +42,7 @@ inline void loadData(HashMap<std::string, Item>& items,
   items.insert("golden_leggings", {"golden_leggings", "Golden Leggings", ItemType::Armor, 105, 1, SlotType::Legs, 2.25});
   items.insert("iron_leggings", {"iron_leggings", "Iron Leggings", ItemType::Armor, 225, 1, SlotType::Legs, 7.5});
   items.insert("diamond_leggings", {"diamond_leggings", "Diamond Leggings", ItemType::Armor, 495, 1, SlotType::Legs, 10.5});
-  items.insert("netherite_leggings", {"netherite_leggings", "Netherite Leggings", ItemType::Armor, 555, 1, SlotType::Legs, 11.25}) 
+  items.insert("netherite_leggings", {"netherite_leggings", "Netherite Leggings", ItemType::Armor, 555, 1, SlotType::Legs, 11.25}); 
   
   items.insert("golden_boots", {"golden_boots", "Golden Boots", ItemType::Armor, 91, 1, SlotType::Feet, 0.75});
   items.insert("iron_boots", {"iron_boots", "Iron Boots", ItemType::Armor, 195, 1, SlotType::Feet, 3.0});

@@ -19,7 +19,35 @@ public:
   {
     clear();
   }
+  List(const List& other) : head_(nullptr), size_(0)
+  {
+    if (!other.head_)
+    {
+      return;
+    }  
+    head_ = new Node{other.head_->data, nullptr};
+    Node* curr = head_;
+    Node* src = other.head_->next_;
+    while (src)
+    {
+      curr->next_ = new Node{src->data, nullptr};
+      curr = curr->next_;
+      src = src->next_;
+    }
+    size_ = other.size_;
+  }
 
+  List& operator=(const List& other)
+  {
+    if (this != &other)
+    {
+      List tmp(other);
+      std::swap(head_, tmp.head_);
+      std::swap(size_, tmp.size_);
+    }
+    return *this;
+  }
+  
   void pushFront(const T& value)
   {
     Node* node = new Node{value, head_};
@@ -43,7 +71,7 @@ public:
     return size_ == 0;
   }
 
-  std::size_t size() const
+  size_t size() const
   {
     return size_;
   }
@@ -72,6 +100,10 @@ public:
     }
     size_ = 0;
   }
+    Node* head()
+  {
+    return head_;
+  }
 
 private:
   struct Node
@@ -79,11 +111,6 @@ private:
     T data;
     Node* next_;
   };
-
-  Node* head()
-  {
-    return head_;
-  }
 
   void setHead(Node* node)
   {

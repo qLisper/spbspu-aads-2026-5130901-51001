@@ -40,6 +40,10 @@ struct Recipe
   std::string result_id;
   std::vector<Ingredient> ingredients;
 };
-
+struct Ingredient
+{
+  std::string item_id;
+  int count;
+};
 
 #endif
