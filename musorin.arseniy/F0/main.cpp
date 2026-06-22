@@ -3,7 +3,8 @@
 #include <sstream>
 #include "data.hpp"
 #include "commands.hpp"
-
+#include "crafting.hpp"
+#include "optimizer.hpp"
 int main()
 {
   HashMap<std::string, Item> items;
