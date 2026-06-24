@@ -131,7 +131,7 @@ void printInvalidCommand()
   std::cout << "<INVALID COMMAND>\n";
 }
 
-} // anonymous namespace
+} 
 
 int main(int argc, char* argv[])
 {
