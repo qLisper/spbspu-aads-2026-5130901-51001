@@ -84,12 +84,54 @@ void printDataset(const std::string& name, const BSTree<int, std::string>& tree)
   std::cout << '\n';
 }
 
+BSTree<int, std::string> complementTrees(const BSTree<int, std::string>& a,
+                                         const BSTree<int, std::string>& b)
+{
+  BSTree<int, std::string> result;
+  for (auto it = a.cbegin(); it != a.cend(); ++it)
+  {
+    if (!b.has((*it).first))
+    {
+      result.push((*it).first, (*it).second);
+    }
+  }
+  return result;
+}
+
+BSTree<int, std::string> intersectTrees(const BSTree<int, std::string>& a,
+                                        const BSTree<int, std::string>& b)
+{
+  BSTree<int, std::string> result;
+  for (auto it = a.cbegin(); it != a.cend(); ++it)
+  {
+    if (b.has((*it).first))
+    {
+      result.push((*it).first, (*it).second);
+    }
+  }
+  return result;
+}
+
+BSTree<int, std::string> unionTrees(const BSTree<int, std::string>& a,
+                                    const BSTree<int, std::string>& b)
+{
+  BSTree<int, std::string> result = a;
+  for (auto it = b.cbegin(); it != b.cend(); ++it)
+  {
+    if (!result.has((*it).first))
+    {
+      result.push((*it).first, (*it).second);
+    }
+  }
+  return result;
+}
+
 void printInvalidCommand()
 {
   std::cout << "<INVALID COMMAND>\n";
 }
 
-} 
+} // anonymous namespace
 
 int main(int argc, char* argv[])
 {
@@ -128,6 +170,60 @@ int main(int argc, char* argv[])
       return;
     }
     printDataset(name, datasets.at(name));
+  });
+
+  commands.add("complement", [&datasets](List<std::string>& args) {
+    if (args.size() != 3)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string newName = *it; ++it;
+    std::string name1 = *it; ++it;
+    std::string name2 = *it;
+    if (!datasets.has(name1) || !datasets.has(name2) || datasets.has(newName))
+    {
+      printInvalidCommand();
+      return;
+    }
+    datasets.add(newName, complementTrees(datasets.at(name1), datasets.at(name2)));
+  });
+
+  commands.add("intersect", [&datasets](List<std::string>& args) {
+    if (args.size() != 3)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string newName = *it; ++it;
+    std::string name1 = *it; ++it;
+    std::string name2 = *it;
+    if (!datasets.has(name1) || !datasets.has(name2) || datasets.has(newName))
+    {
+      printInvalidCommand();
+      return;
+    }
+    datasets.add(newName, intersectTrees(datasets.at(name1), datasets.at(name2)));
+  });
+
+  commands.add("union", [&datasets](List<std::string>& args) {
+    if (args.size() != 3)
+    {
+      printInvalidCommand();
+      return;
+    }
+    auto it = args.cbegin();
+    std::string newName = *it; ++it;
+    std::string name1 = *it; ++it;
+    std::string name2 = *it;
+    if (!datasets.has(name1) || !datasets.has(name2) || datasets.has(newName))
+    {
+      printInvalidCommand();
+      return;
+    }
+    datasets.add(newName, unionTrees(datasets.at(name1), datasets.at(name2)));
   });
 
   std::string line;
