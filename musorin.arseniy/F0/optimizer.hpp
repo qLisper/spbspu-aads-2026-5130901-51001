@@ -58,15 +58,20 @@ inline bool tryBuild(const std::string& id,
   HashMap<std::string, int> used;
   if (!canCraftItem(id, inv, recipes, used))
     return false;
+
   for (auto it = used.begin(); it != used.end(); ++it)
   {
     int* v = inv.find(it->key);
-    if (v)
-    {
-      *v -= it->value;
-      if (*v <= 0)
-        inv.remove(it->key);
-    }
+    if (!v || *v < it->value)
+      return false;
+  }
+
+  for (auto it = used.begin(); it != used.end(); ++it)
+  {
+    int* v = inv.find(it->key);
+    *v -= it->value;
+    if (*v <= 0)
+      inv.remove(it->key);
   }
   return true;
 }
