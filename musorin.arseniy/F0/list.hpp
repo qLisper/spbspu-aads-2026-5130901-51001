@@ -9,6 +9,12 @@ class List
 {
   template < class K, class V >
   friend class HashMap;
+  struct Node
+  {
+    T data;
+    Node* next_;
+  };
+
 public:
   List():
     head_(nullptr),
@@ -19,20 +25,20 @@ public:
   {
     clear();
   }
+
   List(const List& other) : head_(nullptr), size_(0)
   {
     if (!other.head_)
-    {
       return;
-    }  
+
     head_ = new Node{other.head_->data, nullptr};
     Node* curr = head_;
-    Node* src = other.head_->next_;
+    Node* src  = other.head_->next_;
     while (src)
     {
       curr->next_ = new Node{src->data, nullptr};
-      curr = curr->next_;
-      src = src->next_;
+      curr       = curr->next_;
+      src        = src->next_;
     }
     size_ = other.size_;
   }
@@ -47,7 +53,7 @@ public:
     }
     return *this;
   }
-  
+
   void pushFront(const T& value)
   {
     Node* node = new Node{value, head_};
@@ -82,9 +88,7 @@ public:
     while (curr)
     {
       if (curr->data == value)
-      {
         return &curr->data;
-      }
       curr = curr->next_;
     }
     return nullptr;
@@ -100,18 +104,13 @@ public:
     }
     size_ = 0;
   }
-    Node* head()
+
+  Node* head()
   {
     return head_;
   }
 
 private:
-  struct Node
-  {
-    T data;
-    Node* next_;
-  };
-
   void setHead(Node* node)
   {
     head_ = node;
