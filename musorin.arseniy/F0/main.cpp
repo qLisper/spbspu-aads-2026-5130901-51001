@@ -1,10 +1,53 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cctype>
+#include <vector>
 #include "data.hpp"
 #include "commands.hpp"
 #include "crafting.hpp"
 #include "optimizer.hpp"
+
+static bool parseInventory(const std::string& cmd,
+                           std::istringstream& iss,
+                           const HashMap<std::string, Item>& items,
+                           HashMap<std::string, int>& out)
+{
+  std::string tok;
+  while (iss >> tok)
+  {
+    int cnt = 1;
+    std::string id = tok;
+
+    bool isNum = !tok.empty();
+    for (char c : tok)
+    {
+      if (!std::isdigit(static_cast<unsigned char>(c))) { isNum = false; break; }
+    }
+
+    if (isNum)
+    {
+      if (!(iss >> id))
+      {
+        std::cerr << "Usage: " << cmd << " [count] <item-id> ...\n";
+        return false;
+      }
+      cnt = std::stoi(tok);
+    }
+
+    if (!items.find(id))
+    {
+      std::cout << "<ITEM NOT FOUND: " << id << ">\n";
+      return false;
+    }
+
+    int* v = out.find(id);
+    if (v) *v += cnt;
+    else   out.insert(id, cnt);
+  }
+  return true;
+}
+
 int main()
 {
   HashMap<std::string, Item> items;
@@ -20,6 +63,7 @@ int main()
     std::istringstream iss(line);
     std::string cmd;
     iss >> cmd;
+
     if (cmd == "list-items")
     {
       listItems(std::cout, items);
@@ -67,33 +111,8 @@ int main()
     else if (cmd == "best-pvp-pack")
     {
       HashMap<std::string, int> inventory;
-      bool invalid = false;
-      std::string tok;
-      while (iss >> tok)
-      {
-        if (!items.find(tok))
-        {
-          std::cout << "<ITEM NOT FOUND:" << tok << ">\n";
-          invalid = true;
-          break;
-        }
-        int cnt = 1;
-        std::streampos pos = iss.tellg();
-        std::string maybeNum;
-        if (iss >> maybeNum)
-        {
-          bool isNum = !maybeNum.empty();
-          for (char c : maybeNum) if (!std::isdigit(c)) { isNum = false; break; }
-          if (isNum)
-            cnt = std::stoi(maybeNum);
-          else
-            iss.seekg(pos); 
-        }
-        int* v = inventory.find(tok);
-        if (v) *v += cnt;
-        else   inventory.insert(tok, cnt);
-      }
-      if (invalid) continue;
+      if (!parseInventory(cmd, iss, items, inventory)) continue;
+
       std::vector<std::string> pack;
       HashMap<std::string, int> remaining;
       double score = 0.0;
@@ -102,6 +121,7 @@ int main()
         std::cout << "No PvP items can be crafted from the given resources.\n";
         continue;
       }
+
       std::cout << "Optimal PvP pack from given resources:\n";
       for (const std::string& id : pack)
       {
@@ -120,6 +140,7 @@ int main()
         }
         std::cout << "- " << item->name << " [" << slotName << "]\n";
       }
+
       bool hasRemaining = false;
       for (auto it = remaining.begin(); it != remaining.end(); ++it)
       {
@@ -136,38 +157,13 @@ int main()
         }
       }
       if (hasRemaining) std::cout << "\n";
+
       std::cout << "Combat efficiency score: " << score << "\n";
     }
     else if (cmd == "what-to-add")
     {
       HashMap<std::string, int> inventory;
-      bool invalid = false;
-      std::string tok;
-      while (iss >> tok)
-      {
-        if (!items.find(tok))
-        {
-          std::cout << "<ITEM NOT FOUND:" << tok << ">\n";
-          invalid = true;
-          break;
-        }
-        int cnt = 1;
-        std::streampos pos = iss.tellg();
-        std::string maybeNum;
-        if (iss >> maybeNum)
-        {
-          bool isNum = !maybeNum.empty();
-          for (char c : maybeNum) if (!std::isdigit(c)) { isNum = false; break; }
-          if (isNum)
-            cnt = std::stoi(maybeNum);
-          else
-            iss.seekg(pos);
-        }
-        int* v = inventory.find(tok);
-        if (v) *v += cnt;
-        else   inventory.insert(tok, cnt);
-      }
-      if (invalid) continue;
+      if (!parseInventory(cmd, iss, items, inventory)) continue;
       whatToAdd(inventory, items, recipes, std::cout);
     }
     else
