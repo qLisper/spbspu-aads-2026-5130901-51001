@@ -35,13 +35,19 @@ inline void showUses(std::ostream& out, const std::string& id,
                      const HashMap<std::string, Item>& items,
                      const HashMap<std::string, List<std::string>>& useMap)
 {
-  Item* item = items.find(id);
+  const Item* item = items.find(id);
   if (!item) { out << "Item not found.\n"; return; }
-  List<std::string>* lst = useMap.find(id);
-  if (!lst || lst->empty()) { out << "No recipes use " << item->name << " as an ingredient.\n"; return; }
+
+  const List<std::string>* lst = useMap.find(id);
+  if (!lst || lst->empty())
+  {
+    out << "No recipes use " << item->name << " as an ingredient.\n";
+    return;
+  }
+
   out << "Uses for " << item->name << ":\n";
-  for (auto* node = lst->head(); node; node = node->next_)
-    out << "- " << node->data << '\n';
+  for (auto it = lst->begin(); it != lst->end(); ++it)
+    out << "- " << *it << '\n';
 }
 
 inline void search(std::ostream& out, const std::string& prefix,
