@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 static const SlotType SLOT_PRIORITY[] = {
   SlotType::Weapon,
   SlotType::Chest,
@@ -44,7 +45,7 @@ inline double calcEfficiency(const std::vector<std::string>& pack,
   double score = 0.0;
   for (const std::string& id : pack)
   {
-    Item* item = items.find(id);
+    const Item* item = items.find(id);
     if (item) score += item->power;
   }
   return score;
@@ -126,7 +127,7 @@ inline void whatToAdd(const HashMap<std::string, int>& inventory,
   bool upgraded = false;
   for (const std::string& id : pack)
   {
-    Item* cur = items.find(id);
+    const Item* cur = items.find(id);
     if (!cur) continue;
     std::string bestUpgradeId;
     double bestUpgradePower = cur->power;
@@ -144,7 +145,7 @@ inline void whatToAdd(const HashMap<std::string, int>& inventory,
     }
     if (!bestUpgradeId.empty())
     {
-      Item* upItem = items.find(bestUpgradeId);
+      const Item* upItem = items.find(bestUpgradeId);;
       out << "With remaining resources you can upgrade "
           << cur->name << " -> " << upItem->name << "\n";
       upgraded = true;
@@ -156,7 +157,7 @@ inline void whatToAdd(const HashMap<std::string, int>& inventory,
   double weakestPower = 1e18;
   for (const std::string& id : pack)
   {
-    Item* item = items.find(id);
+    const Item* item = items.find(id);
     if (item && item->power < weakestPower)
     {
       weakestPower = item->power;
@@ -164,7 +165,7 @@ inline void whatToAdd(const HashMap<std::string, int>& inventory,
     }
   }
   if (weakestId.empty()) return;
-  Item* weakest = items.find(weakestId);
+  const Item* weakest = items.find(weakestId);
   std::string nextId;
   double nextPower = 1e18;
   for (auto it = items.begin(); it != items.end(); ++it)
@@ -183,18 +184,18 @@ inline void whatToAdd(const HashMap<std::string, int>& inventory,
     out << "Current pack is already at maximum level.\n";
     return;
   }
-  Item* nextItem = items.find(nextId);
-  Recipe* rec    = recipes.find(nextId);
+  const Item* nextItem = items.find(nextId);
+  const Recipe* rec = recipes.find(nextId);
   out << "To upgrade " << weakest->name << " to " << nextItem->name << ", add:\n";
   if (rec)
   {
     for (const Ingredient& ing : rec->ingredients)
     {
       int have = 0;
-      int* v = inventory.find(ing.item_id);
+      const int* v = inventory.find(ing.item_id);
       if (v) have = *v;
       int need = ing.count - have;
-      Item* ingItem = items.find(ing.item_id);
+      const Item* ingItem = items.find(ing.item_id);
       std::string ingName = ingItem ? ingItem->name : ing.item_id;
       if (need > 0)
         out << "- " << ingName << " x" << need << "\n";

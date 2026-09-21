@@ -1,13 +1,15 @@
 #ifndef CRAFTING_HPP
 #define CRAFTING_HPP
+
 #include "hashmap.hpp"
 #include "item.hpp"
+
 inline bool canCraftItem(const std::string& id,
                           const HashMap<std::string, int>& inv,
                           const HashMap<std::string, Recipe>& recipes,
                           HashMap<std::string, int>& used)
 {
-  int* count = inv.find(id);
+  const int* count = inv.find(id);
   if (count && *count > 0)
   {
     int* u = used.find(id);
@@ -15,8 +17,10 @@ inline bool canCraftItem(const std::string& id,
     else   used.insert(id, 1);
     return true;
   }
-  Recipe* rec = recipes.find(id);
+
+  const Recipe* rec = recipes.find(id);
   if (!rec) return false;
+
   HashMap<std::string, int> backup = used;
   for (const Ingredient& ing : rec->ingredients)
   {
@@ -31,4 +35,5 @@ inline bool canCraftItem(const std::string& id,
   }
   return true;
 }
+
 #endif
