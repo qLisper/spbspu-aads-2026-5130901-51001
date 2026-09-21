@@ -22,7 +22,7 @@ static const SlotType SLOT_PRIORITY[] = {
 struct PvpSlot
 {
   SlotType slot;
-  std::vector<const Item*> items; 
+  std::vector<const Item*> items;
 };
 
 inline std::vector<PvpSlot> buildSlotCandidates(
@@ -156,6 +156,106 @@ inline bool bestPvpPack(const HashMap<std::string, int>& inventory,
   return true;
 }
 
+inline void gatherRaw(const std::string& id,
+                      HashMap<std::string, int>& need,
+                      const HashMap<std::string, Recipe>& recipes)
+{
+  const Recipe* rec = recipes.find(id);
+  if (!rec)
+  {
+    int* v = need.find(id);
+    if (v) *v += 1;
+    else   need.insert(id, 1);
+    return;
+  }
+  for (const Ingredient& ing : rec->ingredients)
+  {
+    for (int i = 0; i < ing.count; ++i)
+      gatherRaw(ing.item_id, need, recipes);
+  }
+}
+
+inline bool isSwordId(const std::string& id)
+{
+  static const std::string suf = "_sword";
+  return id.size() >= suf.size()
+      && id.compare(id.size() - suf.size(), suf.size(), suf) == 0;
+}
+
+struct UpgradeChoice
+{
+  bool   have         = false;
+  const Item* item    = nullptr;
+  int    deficitTotal = 0;
+  HashMap<std::string, int> deficit;
+};
+
+inline UpgradeChoice pickUpgrade(const HashMap<std::string, int>& remaining,
+                                 const HashMap<std::string, Item>& items,
+                                 const HashMap<std::string, Recipe>& recipes,
+                                 SlotType weakestSlot,
+                                 double   weakestPower,
+                                 bool     requireUsesLeftover)
+{
+  UpgradeChoice best;
+  for (auto it = items.begin(); it != items.end(); ++it)
+  {
+    const Item& cand = it->value;
+    if (cand.slot != weakestSlot) continue;
+    if (cand.power <= weakestPower) continue;
+
+    if (weakestSlot == SlotType::Weapon && !isSwordId(cand.id)) continue;
+
+    HashMap<std::string, int> need;
+    gatherRaw(cand.id, need, recipes);
+
+    if (requireUsesLeftover)
+    {
+      bool uses = false;
+      for (auto nit = need.begin(); nit != need.end(); ++nit)
+      {
+        const int* have = remaining.find(nit->key);
+        if (have && *have > 0) { uses = true; break; }
+      }
+      if (!uses) continue;
+    }
+
+    HashMap<std::string, int> deficit;
+    int deficitTotal = 0;
+    for (auto nit = need.begin(); nit != need.end(); ++nit)
+    {
+      int have = 0;
+      const int* v = remaining.find(nit->key);
+      if (v) have = *v;
+      int d = nit->value - have;
+      if (d > 0) { deficit.insert(nit->key, d); deficitTotal += d; }
+    }
+
+    bool better = false;
+    if (!best.have) better = true;
+    else if (deficitTotal < best.deficitTotal) better = true;
+    else if (deficitTotal == best.deficitTotal)
+    {
+      if (cand.power < best.item->power) better = true;
+      else if (cand.power == best.item->power)
+      {
+        if (cand.durability > best.item->durability) better = true;
+        else if (cand.durability == best.item->durability
+                 && cand.id < best.item->id) better = true;
+      }
+    }
+
+    if (better)
+    {
+      best.have         = true;
+      best.item         = &cand;
+      best.deficitTotal = deficitTotal;
+      best.deficit      = deficit;
+    }
+  }
+  return best;
+}
+
 inline void whatToAdd(const HashMap<std::string, int>& inventory,
                       const HashMap<std::string, Item>& items,
                       const HashMap<std::string, Recipe>& recipes,
@@ -170,85 +270,69 @@ inline void whatToAdd(const HashMap<std::string, int>& inventory,
     return;
   }
 
-  bool upgraded = false;
+  HashMap<int, const Item*> slotItem;
   for (const std::string& id : pack)
   {
-    const Item* cur = items.find(id);
-    if (!cur) continue;
-    std::string bestUpgradeId;
-    double bestUpgradePower = cur->power;
-    for (auto it = items.begin(); it != items.end(); ++it)
-    {
-      const Item& cand = it->value;
-      if (cand.slot != cur->slot) continue;
-      if (cand.power <= bestUpgradePower) continue;
-      HashMap<std::string, int> used;
-      if (canCraftItem(cand.id, remaining, recipes, used))
-      {
-        bestUpgradeId    = cand.id;
-        bestUpgradePower = cand.power;
-      }
-    }
-    if (!bestUpgradeId.empty())
-    {
-      const Item* upItem = items.find(bestUpgradeId);
-      out << "With remaining resources you can upgrade "
-          << cur->name << " -> " << upItem->name << "\n";
-      upgraded = true;
-    }
+    const Item* it = items.find(id);
+    if (it) slotItem.insert(static_cast<int>(it->slot), it);
   }
-  if (upgraded) return;
 
-  std::string weakestId;
-  double weakestPower = 1e18;
-  for (const std::string& id : pack)
+
+  SlotType    weakestSlot  = SlotType::None;
+  double      weakestPower = 1e18;
+  const Item* weakestItem  = nullptr;
+
+  for (SlotType s : SLOT_PRIORITY)
   {
-    const Item* item = items.find(id);
-    if (item && item->power < weakestPower)
+    const Item* const* exPtr = slotItem.find(static_cast<int>(s));
+    const Item* cur = exPtr ? *exPtr : nullptr;
+    double p = cur ? cur->power : 0.0;
+    if (p < weakestPower)
     {
-      weakestPower = item->power;
-      weakestId    = id;
+      weakestPower = p;
+      weakestItem  = cur;
+      weakestSlot  = s;
     }
   }
-  if (weakestId.empty()) return;
-  const Item* weakest = items.find(weakestId);
-  std::string nextId;
-  double nextPower = 1e18;
-  for (auto it = items.begin(); it != items.end(); ++it)
+
+  if (weakestSlot == SlotType::None)
   {
-    const Item& cand = it->value;
-    if (cand.slot != weakest->slot) continue;
-    if (cand.power <= weakest->power) continue;
-    if (cand.power < nextPower)
-    {
-      nextPower = cand.power;
-      nextId    = cand.id;
-    }
-  }
-  if (nextId.empty())
-  {
-    out << "Current pack is already at maximum level.\n";
+    out << "No PvP slots to upgrade.\n";
     return;
   }
-  const Item* nextItem = items.find(nextId);
-  const Recipe* rec    = recipes.find(nextId);
-  out << "To upgrade " << weakest->name << " to " << nextItem->name << ", add:\n";
-  if (rec)
+
+  UpgradeChoice choice =
+      pickUpgrade(remaining, items, recipes, weakestSlot, weakestPower,
+                  /*requireUsesLeftover=*/true);
+
+  if (!choice.have)
   {
-    for (const Ingredient& ing : rec->ingredients)
-    {
-      int have = 0;
-      const int* v = inventory.find(ing.item_id);
-      if (v) have = *v;
-      int need = ing.count - have;
-      const Item* ingItem = items.find(ing.item_id);
-      std::string ingName = ingItem ? ingItem->name : ing.item_id;
-      if (need > 0)
-        out << "- " << ingName << " x" << need << "\n";
-    }
+    choice = pickUpgrade(remaining, items, recipes, weakestSlot,
+                         weakestPower, /*requireUsesLeftover=*/false);
   }
-  out << "Efficiency would increase from " << currentScore
-      << " to " << (currentScore - weakest->power + nextPower) << "\n";
+
+  if (!choice.have)
+  {
+    if (weakestItem)
+      out << "Weakest slot (" << weakestItem->name
+          << ") is already at maximum level.\n";
+    else
+      out << "No further upgrades available for the weakest slot.\n";
+    return;
+  }
+
+  out << "To achieve better PvP pack, add:\n";
+  for (auto it = choice.deficit.begin(); it != choice.deficit.end(); ++it)
+  {
+    const Item* ri = items.find(it->key);
+    out << it->value << "x " << (ri ? ri->name : it->key) << "\n";
+  }
+  out << "\nWith these additions, you can craft:\n";
+  out << choice.item->name << "\n\n";
+
+  double newScore = currentScore - weakestPower + choice.item->power;
+  out << "Combat efficiency would increase from "
+      << currentScore << " to " << newScore << ".\n";
 }
 
 #endif

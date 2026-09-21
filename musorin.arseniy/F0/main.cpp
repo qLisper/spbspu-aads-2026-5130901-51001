@@ -8,42 +8,60 @@
 #include "crafting.hpp"
 #include "optimizer.hpp"
 
+static bool isNumberToken(const std::string& s)
+{
+  if (s.empty()) return false;
+  for (char c : s)
+    if (!std::isdigit(static_cast<unsigned char>(c))) return false;
+  return true;
+}
+
 static bool parseInventory(const std::string& cmd,
                            std::istringstream& iss,
                            const HashMap<std::string, Item>& items,
                            HashMap<std::string, int>& out)
 {
-  std::string tok;
-  while (iss >> tok)
+  std::vector<std::string> toks;
+  std::string t;
+  while (iss >> t) toks.push_back(t);
+
+  std::size_t i = 0;
+  while (i < toks.size())
   {
     int cnt = 1;
-    std::string id = tok;
-
-    bool isNum = !tok.empty();
-    for (char c : tok)
+    if (isNumberToken(toks[i]))
     {
-      if (!std::isdigit(static_cast<unsigned char>(c))) { isNum = false; break; }
-    }
-
-    if (isNum)
-    {
-      if (!(iss >> id))
+      cnt = std::stoi(toks[i]);
+      ++i;
+      if (i >= toks.size())
       {
         std::cerr << "Usage: " << cmd << " [count] <item-id> ...\n";
         return false;
       }
-      cnt = std::stoi(tok);
+    }
+
+    std::string id = toks[i];
+    std::size_t consumed = 1;
+
+    while (i + consumed < toks.size() && !isNumberToken(toks[i + consumed]))
+    {
+      std::string ext = id + "_" + toks[i + consumed];
+      if (!items.find(ext)) break;
+      id = ext;
+      ++consumed;
     }
 
     if (!items.find(id))
     {
-      std::cout << "<ITEM NOT FOUND: " << id << ">\n";
+      std::cout << "<ITEM NOT FOUND: " << toks[i] << ">\n";
       return false;
     }
 
     int* v = out.find(id);
     if (v) *v += cnt;
     else   out.insert(id, cnt);
+
+    i += consumed;
   }
   return true;
 }
@@ -125,7 +143,7 @@ int main()
       std::cout << "Optimal PvP pack from given resources:\n";
       for (const std::string& id : pack)
       {
-        Item* item = items.find(id);
+        const Item* item = items.find(id);
         if (!item) continue;
         std::string slotName;
         switch (item->slot)
@@ -151,7 +169,7 @@ int main()
             std::cout << "Remaining resources: ";
             hasRemaining = true;
           }
-          Item* ri = items.find(it->key);
+          const Item* ri = items.find(it->key);
           std::cout << it->value << "x "
                     << (ri ? ri->name : it->key) << "  ";
         }

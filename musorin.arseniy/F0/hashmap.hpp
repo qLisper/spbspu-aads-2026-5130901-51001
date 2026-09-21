@@ -176,7 +176,7 @@ public:
   {
     return find(key) != nullptr;
   }
-
+  // <-- добавлено
   void clear()
   {
     for (std::size_t i = 0; i < bucketCount_; ++i)
@@ -191,6 +191,8 @@ public:
   }
 
   std::size_t size() const { return itemCount_; }
+
+  bool empty() const { return itemCount_ == 0; }
 
   Iterator begin() const
   {
