@@ -26,9 +26,15 @@ inline void showRecipe(std::ostream& out, const std::string& id,
   const Recipe* rec = recipes.find(id);
   if (!rec) { out << "No crafting recipe for " << item->name << ".\n"; return; }
 
-  out << "Recipe for " << item->name << ":\n[Crafting grid 3x3]\n";
+  out << "Recipe for " << item->name << ":\n";
+  bool first = true;
   for (const Ingredient& ing : rec->ingredients)
-    out << ing.count << "x " << ing.item_id << "\n";
+  {
+    if (!first) out << ", ";
+    out << ing.count << " " << ing.item_id;
+    first = false;
+  }
+  out << '\n';
 }
 
 inline void showUses(std::ostream& out, const std::string& id,
@@ -47,29 +53,36 @@ inline void showUses(std::ostream& out, const std::string& id,
 
   out << "Uses for " << item->name << ":\n";
   for (auto it = lst->begin(); it != lst->end(); ++it)
-    out << "- " << *it << '\n';
+  {
+    const Item* used = items.find(*it);
+    out << "- " << (used ? used->name : *it) << '\n';
+  }
 }
 
 inline void search(std::ostream& out, const std::string& prefix,
                    const HashMap<std::string, Item>& items)
 {
-  out << "Items starting with '" << prefix << "':\n";
-  bool found = false;
-
   std::string lower_prefix = prefix;
   for (char& c : lower_prefix) c = static_cast<char>(std::tolower(c));
 
+  std::vector<const Item*> hits;
   for (auto it = items.begin(); it != items.end(); ++it)
   {
     std::string name_lower = it->value.name;
     for (char& c : name_lower) c = static_cast<char>(std::tolower(c));
     if (name_lower.compare(0, lower_prefix.size(), lower_prefix) == 0)
-    {
-      out << it->value.name << '\n';
-      found = true;
-    }
+      hits.push_back(&it->value);
   }
-  if (!found) out << "No items starting with '" << prefix << "' found.\n";
+
+  if (hits.empty())
+  {
+    out << "No items starting with '" << prefix << "' found.\n";
+    return;
+  }
+
+  out << "Items starting with '" << prefix << "':\n";
+  for (const Item* it : hits)
+    out << it->name << '\n';
 }
 
 inline void itemInfo(std::ostream& out, const std::string& id,
@@ -94,10 +107,13 @@ inline void itemInfo(std::ostream& out, const std::string& id,
       << (item->durability >= 0 ? std::to_string(item->durability) : "N/A")
       << '\n';
   out << "Max stack size: " << item->maxStack << '\n';
+
+  bool enchantable = (item->type == ItemType::Weapon ||
+                      item->type == ItemType::Armor);
+  out << "Enchantable: " << (enchantable ? "Yes" : "No") << '\n';
+
   out << "Category: "
-      << (item->type == ItemType::Weapon || item->type == ItemType::Armor
-            ? "Combat"
-            : "Other")
+      << (enchantable ? "Combat" : "Other")
       << '\n';
 }
 
