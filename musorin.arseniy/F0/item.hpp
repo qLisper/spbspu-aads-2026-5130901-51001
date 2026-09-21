@@ -35,15 +35,16 @@ struct Item
   double power;
 };
 
-struct Recipe
-{
-  std::string result_id;
-  std::vector<Ingredient> ingredients;
-};
 struct Ingredient
 {
   std::string item_id;
   int count;
+};
+
+struct Recipe
+{
+  std::string result_id;
+  std::vector<Ingredient> ingredients;
 };
 
 #endif

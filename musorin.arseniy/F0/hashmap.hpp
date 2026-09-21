@@ -4,12 +4,20 @@
 #include <cstddef>
 #include <string>
 #include <stdexcept>
+#include <functional>
+#include <utility>
 #include "list.hpp"
 
 template< class Key, class Value >
 class HashMap
 {
 public:
+  struct Pair
+  {
+    Key key;
+    Value value;
+  };
+
   class Iterator
   {
     friend class HashMap;
@@ -18,49 +26,34 @@ public:
 
     bool operator==(const Iterator& other) const
     {
-      return map_ == other.map_ && bucket_ == other.bucket_ && node_ == other.node_;
+      return map_ == other.map_
+          && bucket_ == other.bucket_
+          && node_ == other.node_;
     }
+    bool operator!=(const Iterator& other) const { return !(*this == other); }
 
-    bool operator!=(const Iterator& other) const
-    {
-      return !(*this == other);
-    }
-    
     Iterator& operator++()
     {
       if (node_)
-      {
         node_ = node_->next_;
-      }
+
       while (!node_ && bucket_ < map_->bucketCount_)
       {
-        if (map_->buckets_[bucket_])
-        {
-          node_ = map_->buckets_[bucket_]->head();
-          if (node_) break;
-        }
         ++bucket_;
-      }
-      if (bucket_ >= map_->bucketCount_)
-      {
-        node_ = nullptr;
+        if (bucket_ >= map_->bucketCount_)
+          break;
+        if (map_->buckets_[bucket_])
+          node_ = map_->buckets_[bucket_]->head();
       }
       return *this;
     }
 
-    Pair& operator*() const
-    {
-      return node_->data;
-    }
-
-    Pair* operator->() const
-    {
-      return &(node_->data);
-    }
+    Pair& operator*()  const { return node_->data; }
+    Pair* operator->() const { return &(node_->data); }
 
   private:
-    using Pair = typename HashMap::Pair;
-    Iterator(const HashMap* map, std::size_t bucket, typename List<Pair>::Node* node)
+    Iterator(const HashMap* map, std::size_t bucket,
+             typename List<Pair>::Node* node)
       : map_(map), bucket_(bucket), node_(node) {}
 
     const HashMap* map_;
@@ -68,33 +61,26 @@ public:
     typename List<Pair>::Node* node_;
   };
 
-
-  HashMap():
-    buckets_(new List<Pair>*[INITIAL_BUCKETS]),
-    bucketCount_(INITIAL_BUCKETS),
-    itemCount_(0)
+  HashMap()
+    : buckets_(new List<Pair>*[INITIAL_BUCKETS]),
+      bucketCount_(INITIAL_BUCKETS),
+      itemCount_(0)
   {
     for (std::size_t i = 0; i < bucketCount_; ++i)
-    {
       buckets_[i] = nullptr;
-    }
   }
 
-  HashMap(const HashMap& other):
-    buckets_(new List<Pair>*[other.bucketCount_]),
-    bucketCount_(other.bucketCount_),
-    itemCount_(other.itemCount_)
+  HashMap(const HashMap& other)
+    : buckets_(new List<Pair>*[other.bucketCount_]),
+      bucketCount_(other.bucketCount_),
+      itemCount_(other.itemCount_)
   {
     for (std::size_t i = 0; i < bucketCount_; ++i)
     {
       if (other.buckets_[i])
-      {
         buckets_[i] = new List<Pair>(*other.buckets_[i]);
-      }
       else
-      {
         buckets_[i] = nullptr;
-      }
     }
   }
 
@@ -120,49 +106,42 @@ public:
   {
     std::size_t idx = hash(key) % bucketCount_;
     if (!buckets_[idx])
-    {
       return false;
-    }
+
     List<Pair>* chain = buckets_[idx];
-	Node* curr = chain->head();
-	Node* prev = nullptr;
-	while (curr)
-	{
-	  if (curr->data.key == key)
-	  {
-	    if (prev)
-	    {
+    auto* curr = chain->head();
+    typename List<Pair>::Node* prev = nullptr;
+    while (curr)
+    {
+      if (curr->data.key == key)
+      {
+        if (prev)
           prev->next_ = curr->next_;
-        }
-	      else
-	    {
-	      chain->setHead(curr->next_);
-	    }
-	    delete curr;
-	    --chain->size_;
-	    --itemCount_;
-	    return true;
-	  }
-	  prev = curr;
+        else
+          chain->setHead(curr->next_);
+        delete curr;
+        --chain->size_;
+        --itemCount_;
+        return true;
+      }
+      prev = curr;
       curr = curr->next_;
-	}
-	  return false;
+    }
+    return false;
   }
+
   void insert(const Key& key, const Value& value)
   {
     std::size_t idx = hash(key) % bucketCount_;
     if (!buckets_[idx])
-    {
       buckets_[idx] = new List<Pair>;
-    }
+
     List<Pair>* chain = buckets_[idx];
     auto* curr = chain->head();
     while (curr)
     {
       if (curr->data.key == key)
-      {
         throw std::runtime_error("Key already exists");
-      }
       curr = curr->next_;
     }
     Pair p{key, value};
@@ -172,25 +151,28 @@ public:
 
   Value* find(const Key& key)
   {
+    return const_cast<Value*>(
+      static_cast<const HashMap*>(this)->find(key));
+  }
+
+  const Value* find(const Key& key) const
+  {
     std::size_t idx = hash(key) % bucketCount_;
     if (!buckets_[idx])
-    {
       return nullptr;
-    }
+
     List<Pair>* chain = buckets_[idx];
     auto* curr = chain->head();
     while (curr)
     {
       if (curr->data.key == key)
-      {
         return &curr->data.value;
-      }
       curr = curr->next_;
     }
     return nullptr;
   }
 
-  bool contains(const Key& key)
+  bool contains(const Key& key) const
   {
     return find(key) != nullptr;
   }
@@ -208,19 +190,14 @@ public:
     itemCount_ = 0;
   }
 
-  std::size_t size() const
-  {
-    return itemCount_;
-  }
+  std::size_t size() const { return itemCount_; }
 
   Iterator begin() const
   {
     for (std::size_t i = 0; i < bucketCount_; ++i)
     {
       if (buckets_[i] && buckets_[i]->head())
-      {
         return Iterator(this, i, buckets_[i]->head());
-      }
     }
     return end();
   }
@@ -231,20 +208,9 @@ public:
   }
 
 private:
-  struct Pair
+  std::size_t hash(const Key& k) const
   {
-    Key key;
-    Value value;
-  };
-
-  std::size_t hash(const std::string& s) const
-  {
-    unsigned long h = 5381;
-    for (char c : s)
-    {
-      h = ((h << 5) + h) + static_cast<unsigned long>(c);
-    }
-    return static_cast<std::size_t>(h);
+    return std::hash<Key>{}(k);
   }
 
   static constexpr std::size_t INITIAL_BUCKETS = 64;
