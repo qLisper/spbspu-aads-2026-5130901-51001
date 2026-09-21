@@ -159,22 +159,39 @@ int main()
         std::cout << "- " << item->name << " [" << slotName << "]\n";
       }
 
-      bool hasRemaining = false;
+      bool firstUsed = true;
+      std::cout << "Resources used: ";
+      for (auto it = inventory.begin(); it != inventory.end(); ++it)
+      {
+        const int* remPtr = remaining.find(it->key);
+        int rem = remPtr ? *remPtr : 0;
+        int used = it->value - rem;
+        if (used <= 0) continue;
+
+        if (!firstUsed) std::cout << ", ";
+        const Item* ui = items.find(it->key);
+        std::cout << used << " " << (ui ? ui->name : it->key);
+        firstUsed = false;
+      }
+      std::cout << "\n";
+
+      bool firstRem = true;
       for (auto it = remaining.begin(); it != remaining.end(); ++it)
       {
-        if (it->value > 0)
+        if (it->value <= 0) continue;
+        if (firstRem)
         {
-          if (!hasRemaining)
-          {
-            std::cout << "Remaining resources: ";
-            hasRemaining = true;
-          }
-          const Item* ri = items.find(it->key);
-          std::cout << it->value << "x "
-                    << (ri ? ri->name : it->key) << "  ";
+          std::cout << "Remaining resources: ";
+          firstRem = false;
         }
+        else
+        {
+          std::cout << ", ";
+        }
+        const Item* ri = items.find(it->key);
+        std::cout << it->value << " " << (ri ? ri->name : it->key);
       }
-      if (hasRemaining) std::cout << "\n";
+      if (!firstRem) std::cout << "\n";
 
       std::cout << "Combat efficiency score: " << score << "\n";
     }
